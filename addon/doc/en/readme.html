@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prose 2000</title>
+</head>
+<body>
+<h1>Prose 2000</h1>
+<p>Prose 2000 brings the vintage Telesensory Systems speech synthesizer to modern NVDA. It runs the original firmware in a compact, isolated host and sends the resulting audio through NVDA's selected output device. No original speech hardware or MAME installation is required.</p>
+
+<h2>Using Prose 2000</h2>
+<ol>
+<li>Open NVDA's Select Synthesizer dialog with NVDA+Control+S.</li>
+<li>Choose Prose 2000.</li>
+<li>Select OK.</li>
+</ol>
+<p>Rate, Rate Boost and Volume are available through NVDA's speech settings and synthesizer settings ring.</p>
+
+<h2>Updates</h2>
+<p>Prose 2000 checks its GitHub releases for updates once a day. To check manually, open NVDA's Tools menu and choose <strong>Check for Prose 2000 updates</strong>. Update checks run in the background and do not interrupt speech.</p>
+
+<h2>Reliability</h2>
+<p>The emulator runs outside NVDA. Cancelling speech stops queued audio immediately, and an unresponsive speech host can be restarted without taking down NVDA itself.</p>
+
+<h2>Version 1.0.0</h2>
+<ul>
+<li>Added the first public NVDA driver for Prose 2000.</li>
+<li>Added native PCM streaming through NVDA.</li>
+<li>Added speech cancellation, pause and host recovery.</li>
+<li>Corrected scratchy sibilants by synchronising audio generation with the firmware's safe synthesis boundary.</li>
+<li>Added automatic and manual GitHub update checks.</li>
+<li>Added direct rendering support through SoundWave 1.2.1 and later.</li>
+</ul>
+</body>
+</html>

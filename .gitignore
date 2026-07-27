@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+build/
+dist/
+roms/
+!addon/synthDrivers/_prose2000/roms/
+!addon/synthDrivers/_prose2000/roms/*
+*.wav
+*.log
