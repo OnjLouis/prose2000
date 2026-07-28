@@ -16,6 +16,9 @@ The source build expects a directory containing the standard `prose2k` ROM
 set. The original firmware remains the property of its respective rights
 holders and is not covered by the emulator source's BSD license.
 
+A [ROM-free standalone command-line renderer](https://github.com/OnjLouis/prose2000/releases/download/v1.1.0/Prose2000-CLI-1.1.0.zip)
+is also available for rendering Prose speech to WAV without NVDA.
+
 ## Features
 
 The native engine boots the original 8086 and uPD7720 firmware, accepts serial
@@ -43,9 +46,10 @@ host process without altering NVDA's active synthesizer or global audio path.
 
 ## Building
 
-Configure `native` with CMake and build the `ProseHost` target. The diagnostic
-`prose_cli` and `prose_dsp` targets are intentionally retained for firmware and
-audio regression testing, but are not packaged in the NVDA add-on. See
+Configure `native` with CMake and build the `ProseHost` target. The ROM-free
+`prose_cli` renderer is available separately for command-line use and remains
+useful for firmware and audio regression testing. It is not packaged in the
+NVDA add-on. See
 [`native/README.md`](native/README.md) for build and command-line usage.
 
 ## Research basis

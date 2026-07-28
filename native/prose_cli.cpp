@@ -9,6 +9,22 @@
 #include <iterator>
 #include <string>
 
+namespace {
+
+constexpr const char *VERSION = "1.1.0";
+constexpr s64 DEFAULT_CYCLES = 120'000'000;
+
+void print_usage(std::ostream &stream)
+{
+	stream <<
+		"Prose 2000 command-line renderer " << VERSION << "\n\n"
+		"Usage:\n"
+		"  prose_cli ROM_DIRECTORY [CYCLES] [TEXT|__TEST_MODE__] [WAV_PATH]\n\n"
+		"The ROM directory must contain the standard six-file prose2k ROM set.\n"
+		"CYCLES defaults to 120000000. Text is terminated automatically.\n"
+		"The optional WAV output is mono, 16-bit PCM at 10000 Hz.\n";
+}
+
 static uint16_t reverse_bits(uint16_t value)
 {
 	uint16_t result = 0;
@@ -62,15 +78,27 @@ static std::vector<u8> read_file(const std::filesystem::path &path)
 	return {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
 }
 
+} // anonymous namespace
+
 int main(int argc, char **argv)
 {
+	if (argc == 2 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h"))
+	{
+		print_usage(std::cout);
+		return 0;
+	}
+	if (argc == 2 && std::string(argv[1]) == "--version")
+	{
+		std::cout << VERSION << '\n';
+		return 0;
+	}
 	if (argc < 2)
 	{
-		std::cerr << "usage: prose_cli ROM_DIRECTORY [CYCLES] [TEXT|__TEST_MODE__] [WAV_PATH]\n";
+		print_usage(std::cerr);
 		return 2;
 	}
 	const std::filesystem::path directory(argv[1]);
-	const s64 cycles = argc > 2 ? std::stoll(argv[2]) : 20'000'000;
+	const s64 cycles = argc > 2 ? std::stoll(argv[2]) : DEFAULT_CYCLES;
 	std::array<std::vector<u8>, 4> cpu_roms = {
 		read_file(directory / "v3.4.1__2000__2.u22"),
 		read_file(directory / "v3.4.1__2000__3.u45"),
@@ -91,8 +119,11 @@ int main(int argc, char **argv)
 	s64 elapsed = board.run_cycles(std::min<s64>(cycles, 30'000'000));
 	if (argc > 3 && std::string(argv[3]) != "__TEST_MODE__")
 	{
+		std::string text(argv[3]);
+		if (text.empty() || (text.back() != '\r' && text.back() != '\n'))
+			text.push_back('\r');
 		// Model 9600 baud, 8N1: approximately 8,333 CPU clocks per byte.
-		for (const char value : std::string(argv[3]))
+		for (const char value : text)
 		{
 			board.queue_text(std::string(1, value));
 			const s64 serial_cycles = std::min<s64>(8'333, cycles - elapsed);
