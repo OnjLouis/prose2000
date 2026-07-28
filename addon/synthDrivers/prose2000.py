@@ -3,7 +3,6 @@
 
 import builtins
 from collections import OrderedDict
-from ctypes import c_short
 import os
 import queue
 import re
@@ -211,60 +210,12 @@ def _cleanText(text):
 	return re.sub(r"[^\x20-\x7e]", " ", text)
 
 
-class _AudioProcessor:
-	"""Apply one continuous rate and volume transform to an utterance."""
-
-	def __init__(self, rate, rateBoost, volume):
-		self._volume = volume
-		self._sonic = None
-		exponent = (rate - 50) / 50.0
-		if rateBoost:
-			exponent *= 1.5
-		speed = 2.0 ** exponent
-		if abs(speed - 1.0) <= 0.001:
-			return
-		try:
-			from synthDrivers import _sonic
-
-			_sonic.initialize()
-			self._sonic = _sonic.SonicStream(10000, 1)
-			self._sonic.speed = speed
-		except Exception:
-			log.error("Prose 2000 Sonic rate processing failed", exc_info=True)
-
-	def _applyVolume(self, data):
-		if self._volume <= 0:
-			return b"\0" * len(data)
-		if self._volume >= 100 or not data:
-			return data
-		sampleCount = len(data) // 2
-		samples = (c_short * sampleCount).from_buffer_copy(data)
-		factor = self._volume / 100.0
-		for index in range(sampleCount):
-			samples[index] = int(samples[index] * factor)
-		return bytes(samples)
-
-	def process(self, data):
-		if self._sonic is not None and data:
-			sampleCount = len(data) // 2
-			samples = (c_short * sampleCount).from_buffer_copy(data)
-			self._sonic.writeShort(samples, sampleCount)
-			data = bytes(self._sonic.readShort())
-		return self._applyVolume(data)
-
-	def finish(self):
-		if self._sonic is None:
-			return b""
-		self._sonic.flush()
-		return self._applyVolume(bytes(self._sonic.readShort()))
-
-
 class SynthDriver(SynthDriver):
 	name = "prose2000"
 	description = _("Prose 2000")
 	supportedSettings = (
 		SynthDriver.RateSetting(minStep=5),
-		SynthDriver.RateBoostSetting(),
+		SynthDriver.PitchSetting(minStep=5),
 		SynthDriver.VolumeSetting(minStep=5),
 	)
 	supportedCommands = {IndexCommand}
@@ -290,7 +241,7 @@ class SynthDriver(SynthDriver):
 	def __init__(self):
 		super().__init__()
 		self._rate = 50
-		self._rateBoost = False
+		self._pitch = 50
 		self._volume = 100
 		self._player = _makePlayer()
 		self._host = _ProseHost()
@@ -312,17 +263,46 @@ class SynthDriver(SynthDriver):
 	def _set_rate(self, value):
 		self._rate = max(0, min(100, int(value)))
 
-	def _get_rateBoost(self):
-		return self._rateBoost
+	def _get_pitch(self):
+		return self._pitch
 
-	def _set_rateBoost(self, value):
-		self._rateBoost = bool(value)
+	def _set_pitch(self, value):
+		self._pitch = max(0, min(100, int(value)))
 
 	def _get_volume(self):
 		return self._volume
 
 	def _set_volume(self, value):
 		self._volume = max(0, min(100, int(value)))
+
+	@staticmethod
+	def _mapNativeRate(value):
+		# The firmware's documented range is 50 to 250 words per minute,
+		# with 150 as its factory default.
+		return 50 + max(0, min(100, value)) * 2
+
+	@staticmethod
+	def _mapNativePitch(value):
+		# Native pitch ranges from 50 to 200, with 85 as the factory default.
+		# Keep NVDA's centre at that default while exposing the full useful range.
+		value = max(0, min(100, value))
+		if value <= 50:
+			return 50 + round(value * 35 / 50)
+		return 85 + round((value - 50) * 115 / 50)
+
+	@staticmethod
+	def _mapNativeVolume(value):
+		# Native attenuation is reversed: 0 is full volume and 15 is quietest.
+		value = max(0, min(100, value))
+		return round((100 - value) * 15 / 100)
+
+	def _nativeControlPrefix(self):
+		return (
+			f"\x1b[{self._mapNativeRate(self._rate)}r"
+			"\x1b[0V"
+			f"\x1b[{self._mapNativePitch(self._pitch)}p"
+			f"\x1b[{self._mapNativeVolume(self._volume)}a"
+		)
 
 	def _isCurrent(self, generation):
 		with self._stateLock:
@@ -422,10 +402,10 @@ class SynthDriver(SynthDriver):
 	def _synthesizeText(self, generation, text):
 		if not self._host.isRunning():
 			self._host.start()
+		text = self._nativeControlPrefix() + text
 		self._host.send(_SPEAK, generation, text.encode("ascii", "replace"))
 		cancelledAt = None
 		lastProgressAt = time.monotonic()
-		processor = _AudioProcessor(self._rate, self._rateBoost, self._volume)
 		while True:
 			if not self._isCurrent(generation) and cancelledAt is None:
 				cancelledAt = time.monotonic()
@@ -447,13 +427,8 @@ class SynthDriver(SynthDriver):
 				continue
 			if messageType == _AUDIO:
 				if self._isCurrent(generation):
-					audio = processor.process(payload)
-					if audio:
-						self._player.feed(audio)
+					self._player.feed(payload)
 			elif messageType == _DONE:
-				audio = processor.finish()
-				if audio and self._isCurrent(generation):
-					self._player.feed(audio)
 				return True
 			elif messageType == _CANCELLED:
 				return None

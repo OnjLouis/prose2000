@@ -14,7 +14,8 @@
 <li>Choose Prose 2000.</li>
 <li>Select OK.</li>
 </ol>
-<p>Rate, Rate Boost and Volume are available through NVDA's speech settings and synthesizer settings ring.</p>
+<p>Rate, Pitch and Volume are available through NVDA's speech settings and synthesizer settings ring. A value of 50 selects the original default rate and pitch, while 100 selects the original full volume. These settings use controls built into the original Prose firmware, so no separate audio-processing add-on is required.</p>
+<p>The supplied firmware contains one English male voice. Prose 2000 does not provide selectable voices or variants.</p>
 
 <h2>Updates</h2>
 <p>Prose 2000 checks its GitHub releases for updates once a day. To check manually, open NVDA's Tools menu and choose <strong>Check for Prose 2000 updates</strong>. Update checks run in the background and do not interrupt speech.</p>
@@ -22,7 +23,18 @@
 <h2>Reliability</h2>
 <p>The emulator runs outside NVDA. Cancelling speech stops queued audio immediately, and an unresponsive speech host can be restarted without taking down NVDA itself.</p>
 
-<h2>Version 1.0.0</h2>
+<h2>Changes</h2>
+
+<h3>1.1.0</h3>
+<ul>
+<li>Replaced software rate and volume processing with the original firmware's native Rate, Pitch and Volume controls.</li>
+<li>Added continuous pitch adjustment, with the original pitch at NVDA 50.</li>
+<li>Documented the single supplied voice and the supported firmware settings.</li>
+<li>Added complete source and firmware attribution.</li>
+<li>Added standalone build and usage documentation for the diagnostic prose_cli tool. Closes <a href="https://github.com/OnjLouis/prose2000/issues/1">Issue #1</a>.</li>
+</ul>
+
+<h3>1.0.0</h3>
 <ul>
 <li>Added the first public NVDA driver for Prose 2000.</li>
 <li>Added native PCM streaming through NVDA.</li>
@@ -30,6 +42,15 @@
 <li>Corrected scratchy sibilants by synchronising audio generation with the firmware's safe synthesis boundary.</li>
 <li>Added automatic and manual GitHub update checks.</li>
 <li>Added direct rendering support through SoundWave 1.2.1 and later.</li>
+</ul>
+
+<h2>Credits</h2>
+<ul>
+<li>The original Prose 2000/2020 hardware and firmware were developed by Telesensory Systems Inc. and Speech Plus. The firmware remains proprietary and is not covered by the emulator source license.</li>
+<li><a href="https://github.com/mamedev/mame/blob/master/src/mame/skeleton/tsispch.cpp">MAME's Prose 2000 driver</a>, by Jonathan Gevaryahu with thanks to Kevin Horton, provided the documented board memory map, ROM layout and hardware clocks.</li>
+<li>The standalone compatibility shim is adapted from <a href="https://github.com/daiverd/doubletalk-pc">David Sexton's DoubleTalk PC project</a>.</li>
+<li>The vendored 8086 core and endian helpers come from <a href="https://github.com/mamedev/mame">MAME</a> and retain their BSD-3-Clause notices.</li>
+<li>Prose-specific emulation, DSP audio capture and NVDA integration were developed by Andre Louis with OpenAI Codex assistance.</li>
 </ul>
 </body>
 </html>
